@@ -118,6 +118,8 @@ namespace godot
          */
         void setMainAgent(dtCrowdAgent* crowdAgent, dtCrowd* crowd, int index, dtNavMeshQuery* query, DetourInputGeometry* geom, int crowdIndex);
 
+        void updateParameters(Ref<DetourCrowdAgentParameters> parameters);
+
         /**
          * @brief Sets the filter this agent will use.
          */

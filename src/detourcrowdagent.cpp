@@ -33,7 +33,9 @@ DetourCrowdAgent::_register_methods()
     register_method("moveTowards", &DetourCrowdAgent::moveTowards);
     register_method("stop", &DetourCrowdAgent::stop);
     register_method("getPredictedMovement", &DetourCrowdAgent::getPredictedMovement);
+    register_method("updateParameters", &DetourCrowdAgent::updateParameters);
 
+    register_property<DetourCrowdAgent, int>("id", &DetourCrowdAgent::_agentIndex, -1);
     register_property<DetourCrowdAgent, Vector3>("position", &DetourCrowdAgent::_position, Vector3(0.0f, 0.0f, 0.0f));
     register_property<DetourCrowdAgent, Vector3>("velocity", &DetourCrowdAgent::_velocity, Vector3(0.0f, 0.0f, 0.0f));
     register_property<DetourCrowdAgent, Vector3>("target", &DetourCrowdAgent::_targetPosition, Vector3(0.0f, 0.0f, 0.0f));
@@ -179,6 +181,41 @@ void
 DetourCrowdAgent::addShadowAgent(dtCrowdAgent* crowdAgent)
 {
     _shadows.push_back(crowdAgent);
+}
+
+void
+DetourCrowdAgent::updateParameters(Ref<DetourCrowdAgentParameters> parameters)
+{
+    // code mostly copied from detournavigationmesh.cpp, would be good to share this
+
+    // Set parameter values
+    dtCrowdAgentParams params;
+    memset(&params, 0, sizeof(params));
+    params.radius = parameters->radius;
+    params.height = parameters->height;
+    params.maxAcceleration = parameters->maxAcceleration;
+    params.maxSpeed = parameters->maxSpeed;
+    // TODO: Unsure what a good range would be here, using detour demo values
+    params.collisionQueryRange = params.radius * 12.0f;
+    params.pathOptimizationRange = params.radius * 30.0f;
+    params.updateFlags = 0;
+    if (parameters->anticipateTurns)
+        params.updateFlags |= DT_CROWD_ANTICIPATE_TURNS;
+    if (parameters->optimizeVisibility)
+        params.updateFlags |= DT_CROWD_OPTIMIZE_VIS;
+    if (parameters->optimizeTopology)
+        params.updateFlags |= DT_CROWD_OPTIMIZE_TOPO;
+    if (parameters->avoidObstacles)
+        params.updateFlags |= DT_CROWD_OBSTACLE_AVOIDANCE;
+    if (parameters->avoidOtherAgents)
+        params.updateFlags |= DT_CROWD_SEPARATION;
+    params.obstacleAvoidanceType = (unsigned char)parameters->obstacleAvoidance;
+    params.separationWeight = parameters->separationWeight;
+    // params.queryFilterType = agent->getFilterIndex();
+    // const dtQueryFilter* filter = _crowd->getFilter(params.queryFilterType);
+
+    // TODO: delete old params object?
+    _crowd->updateAgentParameters(_agentIndex, &params);
 }
 
 void
@@ -349,11 +386,11 @@ DetourCrowdAgent::update(float secondsSinceLastTick)
             }
 
             // If we are moving but have no velocity (most likely using off-mesh connection), fake it
-            if (_isMoving && _velocity.length_squared() <= 0.001f)
-            {
-                _velocity = _position - _lastPosition;
-                _velocity = _velocity.normalized() / secondsSinceLastTick;
-            }
+            // if (_isMoving && _velocity.length_squared() <= 0.001f)
+            // {
+            //     _velocity = _position - _lastPosition;
+            //     _velocity = _velocity.normalized() / secondsSinceLastTick;
+            // }
 
             // Remember last position for next tick
             _lastPosition = _position;
